@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kostholdsplan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500&display=swap" rel="stylesheet" />
+  <style>body { font-family: -apple-system, 'Inter', sans-serif; }</style>
+  <style>
+    :root {
+      --fjord:   #0d1e2c;
+      --deep:    #0a1720;
+      --stone:   #16293a;
+      --slate:   #1e3448;
+      --moss:    #2c4a3e;
+      --pine:    #1d3528;
+      --ice:     #c8dce8;
+      --birch:   #e4ede8;
+      --mist:    #7a9bac;
+      --forest:  #4a7c68;
+      --lichen:  #6b9c7e;
+      --water:   #3a6e8a;
+      --snow:    #edf2f0;
+      --dawn:    #b0c8b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--deep);
+      color: var(--birch);
+      min-height: 100vh;
+      padding: 0 0 80px;
+      /* Subtle noise texture */
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(180deg, #0a1c2b 0%, var(--deep) 100%);
+      padding: 48px 24px 36px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid rgba(200,220,232,0.08);
+    }
+
+    /* Mountain silhouette */
+    .hero::before {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 60' preserveAspectRatio='none'%3E%3Cpath d='M0,60 L0,40 L80,20 L160,38 L260,10 L360,32 L440,8 L520,28 L600,5 L680,25 L760,12 L840,30 L920,14 L1000,35 L1080,18 L1160,38 L1200,22 L1200,60 Z' fill='%230a1720' opacity='0.7'/%3E%3Cpath d='M0,60 L0,48 L100,30 L200,50 L320,22 L420,44 L540,18 L640,40 L740,20 L860,42 L960,25 L1060,45 L1200,30 L1200,60 Z' fill='%230a1720'/%3E%3C/svg%3E") no-repeat bottom/cover;
+    }
+
+    .hero-date {
+      font-size: 0.72rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--mist);
+      margin-bottom: 12px;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 6vw, 2.8rem);
+      font-weight: 400;
+      color: var(--snow);
+      letter-spacing: -0.5px;
+      line-height: 1.2;
+    }
+    .hero-sub {
+      font-size: 0.8rem;
+      color: var(--mist);
+      margin-top: 8px;
+      font-weight: 300;
+      letter-spacing: 0.5px;
+    }
+
+    /* ── Stats ── */
+    .stats-row {
+      display: flex;
+      gap: 1px;
+      background: rgba(200,220,232,0.06);
+      border-bottom: 1px solid rgba(200,220,232,0.08);
+    }
+    .stat {
+      flex: 1;
+      padding: 20px 16px;
+      text-align: center;
+      background: var(--deep);
+      position: relative;
+    }
+    .stat + .stat { border-left: 1px solid rgba(200,220,232,0.06); }
+    .stat-num {
+      font-size: 1.4rem;
+      font-weight: 500;
+      color: var(--snow);
+      letter-spacing: -0.5px;
+    }
+    .stat-label {
+      font-size: 0.65rem;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--mist);
+      margin-top: 4px;
+    }
+    .stat-bar {
+      height: 2px;
+      background: rgba(200,220,232,0.1);
+      border-radius: 2px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.8s cubic-bezier(.4,0,.2,1);
+    }
+    .fill-forest { background: var(--lichen); }
+    .fill-water  { background: var(--water); }
+    .fill-dawn   { background: var(--dawn); }
+
+    /* ── Content ── */
+    .content {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    .section-label {
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--mist);
+      margin-bottom: 20px;
+    }
+
+    /* ── Meal card ── */
+    .meal-card {
+      background: var(--stone);
+      border: 1px solid rgba(200,220,232,0.07);
+      border-radius: 4px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      transition:
+        max-height 0.6s cubic-bezier(.4,0,.2,1),
+        opacity 0.5s ease,
+        margin 0.4s ease,
+        padding 0.4s ease;
+      max-height: 600px;
+      opacity: 1;
+    }
+
+    .meal-card.active {
+      border-color: rgba(106,156,126,0.4);
+      background: var(--slate);
+    }
+
+    .meal-card.locked {
+      opacity: 0.35;
+    }
+    .meal-card.locked .meal-btn { display: none; }
+
+    .meal-card.eaten {
+      max-height: 0;
+      opacity: 0;
+      margin-bottom: 0;
+      pointer-events: none;
+      border-width: 0;
+    }
+
+    .meal-inner { padding: 22px 24px; }
+
+    .meal-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .meal-title-group {}
+    .meal-time-tag {
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--mist);
+      margin-bottom: 5px;
+    }
+    .meal-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: var(--snow);
+    }
+    .meal-macros {
+      display: flex;
+      gap: 14px;
+      flex-shrink: 0;
+      padding-top: 2px;
+    }
+    .macro {
+      text-align: right;
+    }
+    .macro-val {
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--ice);
+    }
+    .macro-lbl {
+      font-size: 0.6rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--mist);
+    }
+
+    /* Divider */
+    .meal-divider {
+      height: 1px;
+      background: rgba(200,220,232,0.07);
+      margin-bottom: 14px;
+    }
+
+    /* Food items */
+    .food-items {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .food-item {
+      font-size: 0.85rem;
+      color: var(--dawn);
+      font-weight: 300;
+      padding-left: 14px;
+      position: relative;
+      line-height: 1.4;
+    }
+    .food-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 7px;
+      width: 5px;
+      height: 1px;
+      background: var(--forest);
+    }
+
+    /* Tip */
+    .meal-tip {
+      font-size: 0.75rem;
+      color: var(--mist);
+      font-weight: 300;
+      font-style: italic;
+      border-top: 1px solid rgba(200,220,232,0.07);
+      padding-top: 12px;
+      margin-top: 4px;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    /* Active indicator line */
+    .meal-card.active .meal-inner::before {
+      content: '';
+      display: block;
+      width: 28px;
+      height: 2px;
+      background: var(--lichen);
+      margin-bottom: 18px;
+      border-radius: 2px;
+    }
+
+    /* Button */
+    .meal-btn {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      border: 1px solid rgba(106,156,126,0.35);
+      border-radius: 2px;
+      color: var(--lichen);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+    .meal-btn:hover {
+      background: rgba(106,156,126,0.1);
+      border-color: var(--lichen);
+      color: var(--birch);
+    }
+    .meal-btn:active { opacity: 0.7; }
+
+    /* ── Completed ── */
+    #completed-banner {
+      display: none;
+      text-align: center;
+      padding: 60px 24px;
+    }
+    #completed-banner.show { display: block; }
+    .completed-line {
+      width: 40px;
+      height: 1px;
+      background: var(--lichen);
+      margin: 0 auto 24px;
+    }
+    #completed-banner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 400;
+      color: var(--snow);
+      margin-bottom: 10px;
+    }
+    #completed-banner p {
+      font-size: 0.82rem;
+      color: var(--mist);
+      font-weight: 300;
+      line-height: 1.7;
+      max-width: 320px;
+      margin: 0 auto 28px;
+    }
+    .reset-btn {
+      padding: 11px 28px;
+      background: transparent;
+      border: 1px solid rgba(200,220,232,0.2);
+      border-radius: 2px;
+      color: var(--mist);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .reset-btn:hover {
+      border-color: rgba(200,220,232,0.5);
+      color: var(--ice);
+    }
+
+    /* ── Water section ── */
+    .water-block {
+      border-top: 1px solid rgba(200,220,232,0.07);
+      padding-top: 32px;
+      margin-top: 12px;
+    }
+    .water-grid {
+      display: grid;
+      gap: 10px;
+    }
+    .water-row {
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 12px;
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+    .water-key {
+      color: var(--mist);
+      font-size: 0.7rem;
+      letter-spacing: 0.5px;
+      font-weight: 500;
+      padding-top: 1px;
+    }
+    .water-val {
+      color: var(--dawn);
+      font-weight: 300;
+    }
+
+    /* ── Flash on completion ── */
+    @keyframes flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .flash { animation: flash 0.3s ease 2; }
+
+    html { scroll-behavior: smooth; }
+  </style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-date" id="date-display"></div>
+  <h1>Kostholdsplan</h1>
+  <div class="hero-sub">157 g protein · 2,1 liter vann · 88 kg referanse</div>
+</div>
+
+<!-- Stats -->
+<div class="stats-row">
+  <div class="stat">
+    <div class="stat-num" id="protein-eaten">0 g</div>
+    <div class="stat-label">Protein</div>
+    <div class="stat-bar"><div class="stat-bar-fill fill-forest" id="protein-bar" style="width:0%"></div></div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="water-eaten">0 ml</div>
+    <div class="stat-label">Vann</div>
+    <div class="stat-bar"><div class="stat-bar-fill fill-water" id="water-bar" style="width:0%"></div></div>
+  </div>
+  <div class="stat">
+    <div class="stat-num" id="meal-progress">0 / 5</div>
+    <div class="stat-label">Måltider</div>
+    <div class="stat-bar"><div class="stat-bar-fill fill-dawn" id="meal-bar" style="width:0%"></div></div>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+  <div class="section-label">Dagens måltider</div>
+
+  <!-- 1. Frokost -->
+  <div class="meal-card active" id="meal-0">
+    <div class="meal-inner">
+      <div class="meal-top">
+        <div class="meal-title-group">
+          <div class="meal-time-tag">07:00</div>
+          <div class="meal-name">Frokost</div>
+        </div>
+        <div class="meal-macros">
+          <div class="macro">
+            <div class="macro-val">25 g</div>
+            <div class="macro-lbl">Protein</div>
+          </div>
+          <div class="macro">
+            <div class="macro-val">400 ml</div>
+            <div class="macro-lbl">Vann</div>
+          </div>
+        </div>
+      </div>
+      <div class="meal-divider"></div>
+      <div class="food-items">
+        <div class="food-item">300 g gresk yoghurt</div>
+        <div class="food-item">40 g havregryn</div>
+        <div class="food-item">Ca. 100 g bær eller litt banan</div>
+      </div>
+      <div class="meal-tip">Velg gjerne proteinrik gresk yoghurt.</div>
+      <button class="meal-btn" onclick="markEaten(0)">Marker som spist</button>
+    </div>
+  </div>
+
+  <!-- 2. Lunsj -->
+  <div class="meal-card locked" id="meal-1">
+    <div class="meal-inner">
+      <div class="meal-top">
+        <div class="meal-title-group">
+          <div class="meal-time-tag">11:00 – 12:00</div>
+          <div class="meal-name">Lunsj</div>
+        </div>
+        <div class="meal-macros">
+          <div class="macro">
+            <div class="macro-val">25 g</div>
+            <div class="macro-lbl">Protein</div>
+          </div>
+          <div class="macro">
+            <div class="macro-val">500 ml</div>
+            <div class="macro-lbl">Vann</div>
+          </div>
+        </div>
+      </div>
+      <div class="meal-divider"></div>
+      <div class="food-items">
+        <div class="food-item">1 baguette med ost og skinke</div>
+        <div class="food-item">Gjerne salat og grønnsaker</div>
+      </div>
+      <div class="meal-tip">Proteinmengden avhenger av størrelsen på baguetten og mengden pålegg.</div>
+      <button class="meal-btn" onclick="markEaten(1)">Marker som spist</button>
+    </div>
+  </div>
+
+  <!-- 3. Middag -->
+  <div class="meal-card locked" id="meal-2">
+    <div class="meal-inner">
+      <div class="meal-top">
+        <div class="meal-title-group">
+          <div class="meal-time-tag">15:00 – 17:00</div>
+          <div class="meal-name">Middag</div>
+        </div>
+        <div class="meal-macros">
+          <div class="macro">
+            <div class="macro-val">30 g</div>
+            <div class="macro-lbl">Protein</div>
+          </div>
+          <div class="macro">
+            <div class="macro-val">500 ml</div>
+            <div class="macro-lbl">Vann</div>
+          </div>
+        </div>
+      </div>
+      <div class="meal-divider"></div>
+      <div class="food-items">
+        <div class="food-item">Restaurant – velg ett av alternativene:</div>
+        <div class="food-item">Kyllingsnadder med ris</div>
+        <div class="food-item">Biff stroganoff med ris</div>
+        <div class="food-item">Kjøttkaker med poteter</div>
+      </div>
+      <div class="meal-tip">Velg en god porsjon kjøtt/kylling og gjerne grønnsaker.</div>
+      <button class="meal-btn" onclick="markEaten(2)">Marker som spist</button>
+    </div>
+  </div>
+
+  <!-- 4. Proteinshake -->
+  <div class="meal-card locked" id="meal-3">
+    <div class="meal-inner">
+      <div class="meal-top">
+        <div class="meal-title-group">
+          <div class="meal-time-tag">Etter trening</div>
+          <div class="meal-name">Proteinshake</div>
+        </div>
+        <div class="meal-macros">
+          <div class="macro">
+            <div class="macro-val">45 g</div>
+            <div class="macro-lbl">Protein</div>
+          </div>
+          <div class="macro">
+            <div class="macro-val">300 ml</div>
+            <div class="macro-lbl">Vann</div>
+          </div>
+        </div>
+      </div>
+      <div class="meal-divider"></div>
+      <div class="food-items">
+        <div class="food-item">4 dl melk</div>
+        <div class="food-item">1 banan</div>
+        <div class="food-item">1 ss peanøttsmør</div>
+        <div class="food-item">1 scoop proteinpulver</div>
+        <div class="food-item">5 g kreatin</div>
+      </div>
+      <div class="meal-tip">Vannet er ekstra ved siden av shaken – melken teller også som væske.</div>
+      <button class="meal-btn" onclick="markEaten(3)">Marker som spist</button>
+    </div>
+  </div>
+
+  <!-- 5. Kvelds -->
+  <div class="meal-card locked" id="meal-4">
+    <div class="meal-inner">
+      <div class="meal-top">
+        <div class="meal-title-group">
+          <div class="meal-time-tag">19:00 – 21:00</div>
+          <div class="meal-name">Kveldsmåltid</div>
+        </div>
+        <div class="meal-macros">
+          <div class="macro">
+            <div class="macro-val">32 g</div>
+            <div class="macro-lbl">Protein</div>
+          </div>
+          <div class="macro">
+            <div class="macro-val">400 ml</div>
+            <div class="macro-lbl">Vann</div>
+          </div>
+        </div>
+      </div>
+      <div class="meal-divider"></div>
+      <div class="food-items">
+        <div class="food-item">2 rundstykker</div>
+        <div class="food-item">3 egg</div>
+        <div class="food-item">Kaviar</div>
+      </div>
+      <div class="meal-tip">Grove rundstykker gir gjerne mer fiber.</div>
+      <button class="meal-btn" onclick="markEaten(4)">Marker som spist</button>
+    </div>
+  </div>
+
+  <!-- Completed -->
+  <div id="completed-banner">
+    <div class="completed-line"></div>
+    <h2>Dagen fullført</h2>
+    <p>Du har gjennomført alle fem måltider. Godt jobbet – kroppen din takker deg.</p>
+    <button class="reset-btn" onclick="resetAll()">Start ny dag</button>
+  </div>
+
+  <!-- Water section -->
+  <div class="water-block">
+    <div class="section-label" style="margin-bottom:16px">Væske gjennom dagen</div>
+    <div class="water-grid">
+      <div class="water-row">
+        <span class="water-key">Hviledag</span>
+        <span class="water-val">2–2,5 liter totalt, justert etter tørste og forhold.</span>
+      </div>
+      <div class="water-row">
+        <span class="water-key">Treningsdag</span>
+        <span class="water-val">2,5–3 liter som utgangspunkt, pluss ekstra ved svette.</span>
+      </div>
+      <div class="water-row">
+        <span class="water-key">Før trening</span>
+        <span class="water-val">Ca. 300–500 ml i timen før økten.</span>
+      </div>
+      <div class="water-row">
+        <span class="water-key">Under trening</span>
+        <span class="water-val">Drikk jevnlig etter tørste, intensitet og svetting.</span>
+      </div>
+      <div class="water-row">
+        <span class="water-key">Husk</span>
+        <span class="water-val">Melk i shaken teller også som væske.</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const MEALS = [
+    { protein: 25, water: 400 },
+    { protein: 25, water: 500 },
+    { protein: 30, water: 500 },
+    { protein: 45, water: 300 },
+    { protein: 32, water: 400 },
+  ];
+  const TOTAL_PROTEIN = 157;
+  const TOTAL_WATER   = 2100;
+  const TOTAL_MEALS   = 5;
+
+  // Safe localStorage wrapper (fails gracefully on mobile file:// mode)
+  function storageGet(key) {
+    try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch(e) { return {}; }
+  }
+  function storageSet(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {}
+  }
+
+  let state = loadState();
+
+  function loadState() {
+    const today = new Date().toDateString();
+    const saved = storageGet('kostholdsplan_v2');
+    if (saved.date !== today) return { date: today, eaten: [] };
+    return saved;
+  }
+
+  function saveState() {
+    storageSet('kostholdsplan_v2', state);
+  }
+
+  function markEaten(index) {
+    if (state.eaten.includes(index)) return;
+    state.eaten.push(index);
+    saveState();
+
+    const card = document.getElementById(`meal-${index}`);
+    card.classList.add('flash');
+    setTimeout(() => {
+      card.classList.add('eaten');
+      render();
+    }, 500);
+  }
+
+  function findNext() {
+    for (let i = 0; i < TOTAL_MEALS; i++) {
+      if (!state.eaten.includes(i)) return i;
+    }
+    return null;
+  }
+
+  function render() {
+    const eatenCount = state.eaten.length;
+    let totalProtein = 0, totalWater = 0;
+    state.eaten.forEach(i => {
+      totalProtein += MEALS[i].protein;
+      totalWater   += MEALS[i].water;
+    });
+
+    // Stats
+    document.getElementById('protein-eaten').textContent = `${totalProtein} g`;
+    document.getElementById('water-eaten').textContent =
+      totalWater >= 1000
+        ? `${(totalWater / 1000).toFixed(1).replace('.', ',')} L`
+        : `${totalWater} ml`;
+    document.getElementById('meal-progress').textContent = `${eatenCount} / ${TOTAL_MEALS}`;
+
+    document.getElementById('protein-bar').style.width = `${Math.min(100, (totalProtein / TOTAL_PROTEIN) * 100)}%`;
+    document.getElementById('water-bar').style.width   = `${Math.min(100, (totalWater / TOTAL_WATER) * 100)}%`;
+    document.getElementById('meal-bar').style.width    = `${(eatenCount / TOTAL_MEALS) * 100}%`;
+
+    const nextIndex = findNext();
+
+    for (let i = 0; i < TOTAL_MEALS; i++) {
+      const card = document.getElementById(`meal-${i}`);
+      if (state.eaten.includes(i)) {
+        card.classList.add('eaten');
+        card.classList.remove('active', 'locked');
+      } else if (i === nextIndex) {
+        card.classList.add('active');
+        card.classList.remove('locked', 'eaten');
+      } else {
+        card.classList.add('locked');
+        card.classList.remove('active', 'eaten');
+      }
+    }
+
+    const banner = document.getElementById('completed-banner');
+    if (eatenCount === TOTAL_MEALS) {
+      banner.classList.add('show');
+    } else {
+      banner.classList.remove('show');
+      if (nextIndex !== null) {
+        setTimeout(() => {
+          document.getElementById(`meal-${nextIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 700);
+      }
+    }
+  }
+
+  function resetAll() {
+    state = { date: new Date().toDateString(), eaten: [] };
+    saveState();
+    for (let i = 0; i < TOTAL_MEALS; i++) {
+      const card = document.getElementById(`meal-${i}`);
+      card.classList.remove('eaten', 'active', 'locked', 'flash');
+    }
+    render();
+  }
+
+  // Date
+  const now = new Date();
+  document.getElementById('date-display').textContent =
+    now.toLocaleDateString('nb-NO', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  render();
+</script>
+</body>
+</html>
